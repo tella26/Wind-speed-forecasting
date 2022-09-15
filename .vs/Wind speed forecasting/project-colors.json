@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "951286bd-0510-4843-978b-a0b0878265e9": {
+      "ProjectGuid": "951286bd-0510-4843-978b-a0b0878265e9",
+      "DisplayName": "Wind speed forecasting",
+      "ColorIndex": 0
+    }
+  },
+  "NextColorIndex": 1
+}

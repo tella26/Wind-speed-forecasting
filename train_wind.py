@@ -1,13 +1,13 @@
 import argparse
 import os
 import torch
+import wandb
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 from experiments.exp_wind import Exp_wind
 
 parser = argparse.ArgumentParser(description='ResNet on Wind Speed dataset')
-
 
 parser.add_argument('--model', type=str, required=False, default='ResNet1D', help='model of the experiment')
 ### -------  dataset settings --------------
@@ -31,7 +31,7 @@ parser.add_argument('--devices', type=str, default='0',help='device ids of multi
 ### -------  input/output length settings --------------                                                                            
 parser.add_argument('--seq_len', type=int, default=32, help='input sequence length of resnet')
 parser.add_argument('--label_len', type=int, default=32, help='start token length of Informer decoder')
-parser.add_argument('--pred_len', type=int, default=128, help='prediction sequence length, horizon')
+parser.add_argument('--pred_len', type=int, default=64, help='prediction sequence length, horizon')
 parser.add_argument('--concat_len', type=int, default=0)
 parser.add_argument('--single_step', type=int, default=0)
 parser.add_argument('--single_step_output_One', type=int, default=0)
@@ -42,7 +42,7 @@ parser.add_argument('--cols', type=str, nargs='+', help='file list')
 parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
 parser.add_argument('--itr', type=int, default=0, help='experiments times')
 parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')
-parser.add_argument('--batch_size', type=int, default=32, help='batch size of train input data')
+parser.add_argument('--batch_size', type=int, default=64, help='batch size of train input data')
 parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
 parser.add_argument('--lr', type=float, default=0.0001, help='optimizer learning rate')
 parser.add_argument('--loss', type=str, default='RMSE',help='loss function')
@@ -61,11 +61,12 @@ parser.add_argument('--base_filter', type=int, default=4, help='number of filter
 parser.add_argument('--groups', default=1, type=int, help='set largest to 1')
 parser.add_argument('--n_block', default=4, type=int, help='number of blocks')
 parser.add_argument('--kernel', default=3, type=int, help='width of kernel')
-parser.add_argument('--n_classes', default=128, type=int, help='number of classes')
+parser.add_argument('--n_classes', default=64, type=int, help='number of classes')
 
 
 
 args = parser.parse_args()
+
 
 args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
 
@@ -90,6 +91,38 @@ args.freq = args.freq[-1:]
 print('Args in experiment:')
 print(args)
 
+wandb.init(config=args)
+config = wandb.config
+
+'''config = {
+    'method': 'grid', #grid, random
+    'parameters':{
+    
+      'train_epochs': {
+          'values': [10]
+      },
+      'batch_size': {
+          'values': [128]
+      },
+      'lr': {
+          'values': [1e-4]
+      },
+      'features': {
+          'values': ['S']
+      },
+      'input_channel': {
+          'values': [32]
+      },
+      'n_classes': {
+          'values': [64]
+      }
+    }
+}
+
+sweep_id = wandb.sweep(
+    config,
+    project="Wind Speed Forecasting")
+'''
 torch.manual_seed(4321)  # reproducible
 torch.cuda.manual_seed_all(4321)
 torch.backends.cudnn.benchmark = False
@@ -117,7 +150,7 @@ else:
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-            exp.train(setting)
+            exp.train(setting) 
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
             mae, maes, mse, mses = exp.test(setting)
@@ -132,13 +165,24 @@ else:
         print('Final min normed mse:{:.4f}, mae:{:.4f}'.format(min(mse_), min(mae_)))
         print('Final min denormed mse:{:.4f}, mae:{:.4f}'.format(min(mses_), min(maes_)))
     else:
-        setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_lr{}_bs{}itr0'.format(args.model,args.data, args.features, args.seq_len, args.label_len, args.pred_len,args.lr,args.batch_size)
+        setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_lr{}_bs{}_itr0'.format(args.model,args.data, args.features, args.seq_len, args.label_len, args.pred_len,args.lr,args.batch_size)
+        wandb.log({
+            "model": args.model,
+            "data": args.data,
+            "features" : args.features,
+            "Sequence Length": args.seq_len,
+            "label length": args.label_len,
+            "prediction length": args.pred_len,
+            "learning rate": args.lr,
+            "batch size": args.batch_size
+            }) 
         exp = Exp(args)  # set experiments
         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
         exp.train(setting)
+        #wandb.agent(sweep_id, exp.train(setting))
 
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-        mae, maes, mse, mses = exp.test(setting)
+        mae, maes, mse, mses =exp.test(setting)
         print('Final mean normed mse:{:.4f},mae:{:.4f},denormed mse:{:.4f},mae:{:.4f}'.format(mse, mae, mses, maes))
 
 

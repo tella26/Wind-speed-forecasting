@@ -1,0 +1,471 @@
+diff --git a/data_processing/wind_speed_dataloader.py b/data_processing/wind_speed_dataloader.py
+index 28c1eb6..533b7fa 100644
+--- a/data_processing/wind_speed_dataloader.py
++++ b/data_processing/wind_speed_dataloader.py
+@@ -1,7 +1,9 @@
+ import os
+ import numpy as np
++import wandb
+ import pandas as pd
+ 
++
+ import torch
+ from torch.utils.data import Dataset, DataLoader
+ #from sklearn.preprocessing import StandardScaler
+@@ -12,11 +14,13 @@ from data_processing.timefeatures import time_features
+ import warnings
+ warnings.filterwarnings('ignore')
+ 
++
++
+ class Dataset_wind(Dataset):
+     def __init__(self, root_path, flag='train', size=None, 
+                  features='S', data_path='Wind_speed_data.csv', 
+-                 target='40m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+-        # size [seq_len, label_len, pred_len]
++                 target='50m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
++        #size [seq_len, label_len, pred_len]
+         # info
+         if size == None:
+             self.seq_len = 24*4*4
+@@ -48,8 +52,16 @@ class Dataset_wind(Dataset):
+                                           self.data_path))
+         '''
+         df_raw.columns: ['time', ...(other features), target feature]
+-        '''
+-        # cols = list(df_raw.columns); 
++       
++        cols = list(df_raw.columns); 
++        wandb.init(
++        project="Wind Speed Forecasting")
++        # Create a wandb Table to log data, labels and predictions to
++        table = wandb.Table(data=df_raw, columns=cols)
++        wandb.log({"data_table":table}, commit=False)
++         # Mark the run as finished
++        wandb.finish()
++         '''
+         if self.cols:
+             cols=self.cols.copy()
+             cols.remove(self.target)
+@@ -60,11 +72,14 @@ class Dataset_wind(Dataset):
+         num_train = int(len(df_raw)*0.7)
+         num_test = int(len(df_raw)*0.2)
+         num_vali = len(df_raw) - num_train - num_test
++        
++        
+         border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
+         border2s = [num_train, num_train+num_vali, len(df_raw)]
+         border1 = border1s[self.set_type]
+         border2 = border2s[self.set_type]
+         
++        
+         if self.features=='M' or self.features=='MS':
+             cols_data = df_raw.columns[1:]
+             df_data = df_raw[cols_data]
+@@ -88,6 +103,7 @@ class Dataset_wind(Dataset):
+         else:
+             self.data_y = data[border1:border2]
+         self.data_stamp = data_stamp
++        
+     
+     def __getitem__(self, index):
+         s_begin = index
+@@ -99,7 +115,28 @@ class Dataset_wind(Dataset):
+         seq_y = self.data_y[r_begin:r_end]
+         seq_x_mark = self.data_stamp[s_begin:s_end]
+         seq_y_mark = self.data_stamp[r_begin:r_end]
+-
++        
++        '''
++        my_data = [
++             [seq_x],
++             #seq_y,
++             #seq_x_mark,
++             #seq_y_mark          
++            ]
++        # cols = list(my_data.columns);
++        column=seq_x['train_batch_x'] 
++        wandb.init(
++        project="Wind Speed Forecasting",
++        # Track hyperparameters and run metadata
++        config={
++        "train_epochs": 120
++        } )
++        # Create a wandb Table to log data, labels and predictions to
++        table = wandb.Table(data=my_data, columns=column)
++        wandb.log({"data_table":table}, commit=False)
++         # Mark the run as finished
++        wandb.finish()
++        '''
+         return seq_x, seq_y, seq_x_mark, seq_y_mark
+     
+     def __len__(self):
+@@ -111,8 +148,8 @@ class Dataset_wind(Dataset):
+ class Dataset_Pred(Dataset):
+     def __init__(self, root_path, flag='pred', size=None, 
+                  features='S', data_path='Wind_speed_data.csv', 
+-                 target='40m', scale=True, inverse=False, timeenc=0, freq='15min', cols=None):
+-        # size [seq_len, label_len, pred_len]
++                 target='50m', scale=True, inverse=False, timeenc=0, freq='15min', cols=None):
++        #size [seq_len, label_len, pred_len]
+         # info
+         if size == None:
+             self.seq_len = 24*4*4
+@@ -204,4 +241,4 @@ class Dataset_Pred(Dataset):
+     # Download the data set from URL
+     print("Downloading data from wind speed")
+     Dataset_wind("./dataset/")
+-'''
+\ No newline at end of file
++    '''
+diff --git a/event/run_wind_speed/ResNet1D/events.out.tfevents.1663243367.DESKTOP-80TB3QD.19372.1 b/event/run_wind_speed/ResNet1D/events.out.tfevents.1663243367.DESKTOP-80TB3QD.19372.1
+deleted file mode 100644
+index 7d6848d..0000000
+Binary files a/event/run_wind_speed/ResNet1D/events.out.tfevents.1663243367.DESKTOP-80TB3QD.19372.1 and /dev/null differ
+diff --git a/event/run_wind_speed/ResNet1D/events.out.tfevents.1663244018.DESKTOP-80TB3QD.12148.1 b/event/run_wind_speed/ResNet1D/events.out.tfevents.1663244018.DESKTOP-80TB3QD.12148.1
+deleted file mode 100644
+index bf693fc..0000000
+Binary files a/event/run_wind_speed/ResNet1D/events.out.tfevents.1663244018.DESKTOP-80TB3QD.12148.1 and /dev/null differ
+diff --git a/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663243362.DESKTOP-80TB3QD.19372.0 b/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663243362.DESKTOP-80TB3QD.19372.0
+deleted file mode 100644
+index c7e154c..0000000
+Binary files a/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663243362.DESKTOP-80TB3QD.19372.0 and /dev/null differ
+diff --git a/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663244015.DESKTOP-80TB3QD.12148.0 b/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663244015.DESKTOP-80TB3QD.12148.0
+deleted file mode 100644
+index 2e24af6..0000000
+Binary files a/event/run_wind_speed_models/ResNet1D/events.out.tfevents.1663244015.DESKTOP-80TB3QD.12148.0 and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin
+deleted file mode 100644
+index 878bb29..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/checkpoint.pth
+deleted file mode 100644
+index 1e33fbf..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll18_pl18_lr0.0001_bs32itr0/checkpoint.pth and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin
+deleted file mode 100644
+index d365fc0..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth
+deleted file mode 100644
+index a84c6c8..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftM_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/Wind_speed_data128.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/Wind_speed_data128.bin
+deleted file mode 100644
+index 9b97085..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/Wind_speed_data128.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/checkpoint.pth
+deleted file mode 100644
+index 4434f94..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl128_lr0.0001_bs32itr0/checkpoint.pth and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin
+deleted file mode 100644
+index 436f337..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/Wind_speed_data18.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth
+deleted file mode 100644
+index 594982d..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl18_lr0.0001_bs32itr0/checkpoint.pth and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/Wind_speed_data32.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/Wind_speed_data32.bin
+deleted file mode 100644
+index 3bf2920..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/Wind_speed_data32.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/checkpoint.pth
+deleted file mode 100644
+index 71b83d3..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl32_lr0.0001_bs32itr0/checkpoint.pth and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/Wind_speed_data64.bin b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/Wind_speed_data64.bin
+deleted file mode 100644
+index ef28c24..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/Wind_speed_data64.bin and /dev/null differ
+diff --git a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/checkpoint.pth b/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/checkpoint.pth
+deleted file mode 100644
+index fe5f21b..0000000
+Binary files a/exp/wind_checkpoints/ResNet1D_Wind_speed_data_ftS_sl32_ll32_pl64_lr0.0001_bs64itr0/checkpoint.pth and /dev/null differ
+diff --git a/experiments/exp_wind.py b/experiments/exp_wind.py
+index add2ef5..f6869a5 100644
+--- a/experiments/exp_wind.py
++++ b/experiments/exp_wind.py
+@@ -1,9 +1,10 @@
++import json
+ import os
+ import sys
+ import time
+ 
+ import numpy as np
+-
++import wandb
+ import torch
+ import torch.nn as nn
+ from torch import optim
+@@ -75,7 +76,11 @@ class Exp_wind(Exp_Basic):
+             freq=freq,
+             cols=args.cols
+         )
++        dataset_json_str = json.dumps(list(data_set))
++        wandb.log({
++            flag + "_Dataset": dataset_json_str})
+         print(flag, len(data_set))
++        
+         data_loader = DataLoader(
+             data_set,
+             batch_size=batch_size,
+@@ -87,6 +92,8 @@ class Exp_wind(Exp_Basic):
+ 
+     def _select_optimizer(self):
+         model_optim = optim.Adam(self.model.parameters(), lr=self.args.lr)
++        wandb.log({
++            "Optimizer": model_optim })
+         return model_optim
+     
+     def _select_criterion(self, losstype):
+@@ -124,8 +131,13 @@ class Exp_wind(Exp_Basic):
+             true_scale = torch.tensor(true_scale)           
+             true_scales.append(true_scale.detach().cpu().numpy())
+             total_loss.append(loss)
++            wandb.log({"Predicted Scales val": pred_scales})
++            wandb.log({"True Scales val": true_scales})
++            wandb.log({"Predicted val": pred})
++            wandb.log({"True val": true})
+             
+         total_loss = np.average(total_loss)
++        wandb.log({"Total validation loss": total_loss})
+ 
+         preds = np.array(preds)
+         trues = np.array(trues)
+@@ -139,6 +151,23 @@ class Exp_wind(Exp_Basic):
+ 
+         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
+         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
++        # For true and Predicted
++        wandb.log({"mae val": mae})
++        wandb.log({"mse val": mse})
++        wandb.log({"rmse val": rmse})
++        wandb.log({"mape val": mape})
++        wandb.log({"mspe val": mspe})
++        wandb.log({"corr val": corr})
++        
++         # For true and Predicted scales
++        wandb.log({"mae_scale val": maes})
++        wandb.log({"mse_scale val": mses})
++        wandb.log({"rmse_scale val": rmses})
++        wandb.log({"mape_scale val": mapes})
++        wandb.log({"mspe_scale val": mspes})
++        wandb.log({"corr_scale val": corrs})
++       
++        
+         '''
+         writer.add_scalar('mae', mae, global_step=self.epoch)
+         writer.add_scalar('mse', mse, global_step=self.epoch)
+@@ -191,8 +220,6 @@ class Exp_wind(Exp_Basic):
+                     train_data, batch_x, batch_y)
+                 true = true.mean(-1)
+                 loss = criterion(pred, true)
+- 
+-
+                 train_loss.append(loss.item())
+                 
+                 if (i+1) % 100==0:
+@@ -202,6 +229,9 @@ class Exp_wind(Exp_Basic):
+                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                     iter_count = 0
+                     time_now = time.time()
++                    wandb.log({"Speed": speed})
++                    wandb.log({"left_time ": left_time })
++                    wandb.log({"loss": loss})
+                 
+                 if self.args.use_amp:
+                     print('use amp')    
+@@ -225,8 +255,10 @@ class Exp_wind(Exp_Basic):
+             writer.add_scalar('train_loss', train_loss, global_step=epoch)
+             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
+             writer.add_scalar('test_loss', test_loss, global_step=epoch)
+-  
+-
++            wandb.log({"Train Loss": train_loss})
++            wandb.log({"Validation Loss": valid_loss})
++            wandb.log({"Test Loss": test_loss})
++            wandb.log({"Cost time": time.time()-epoch_time})
+             
+             early_stopping(valid_loss, self.model, path)
+             if early_stopping.early_stop:
+@@ -234,6 +266,7 @@ class Exp_wind(Exp_Basic):
+                 break
+ 
+             lr = adjust_learning_rate(model_optim, epoch+1, self.args)
++            wandb.log({"Learning rate adjustent": lr})
+             
+         save_model(epoch, lr, self.model, path, model_name=self.args.data, horizon=self.args.pred_len)
+         best_model_path = path+'/'+'checkpoint.pth'
+@@ -266,7 +299,10 @@ class Exp_wind(Exp_Basic):
+             trues.append(true.detach().cpu().numpy())
+             pred_scales.append(pred_scale.detach().cpu().numpy())
+             true_scales.append(true_scale.detach().cpu().numpy())
+-
++            wandb.log({"Predicted Scales test": pred_scales})
++            wandb.log({"True Scales test": true_scales})
++            wandb.log({"Predicted test": pred})
++            wandb.log({"True test": true})
+         preds = np.array(preds)
+         trues = np.array(trues)
+ 
+@@ -280,6 +316,22 @@ class Exp_wind(Exp_Basic):
+ 
+         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
+         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
++        
++        # For true and Predicted
++        wandb.log({"mae test": mae})
++        wandb.log({"mse test": mse})
++        wandb.log({"rmse test": rmse})
++        wandb.log({"mape test": mape})
++        wandb.log({"mspe test": mspe})
++        wandb.log({"corr test": corr})
++        
++         # For true and Predicted scales
++        wandb.log({"mae_scale test": maes})
++        wandb.log({"mse_scale test": mses})
++        wandb.log({"rmse_scale test": rmses})
++        wandb.log({"mape_scale test": mapes})
++        wandb.log({"mspe_scale test": mspes})
++        wandb.log({"corr_scale test": corrs})
+         print('normed mse:{:.4f}, mae:{:.4f}, rmse:{:.4f}, mape:{:.4f}, mspe:{:.4f}, corr:{:.4f}'.format(mse, mae, rmse, mape, mspe, corr))
+         print('TTTT Final --> denormed mse:{:.4f}, mae:{:.4f}, rmse:{:.4f}, mape:{:.4f}, mspe:{:.4f}, corr:{:.4f}'.format(mses, maes, rmses, mapes, mspes, corrs))
+ 
+diff --git a/requirements.txt b/requirements.txt
+index 2b2a3ff..d3bbb4c 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -5,3 +5,4 @@ scikit-learn
+ torch
+ tensorboard
+ utils
++wandb
+diff --git a/train_wind.py b/train_wind.py
+index bb363a0..ecd937e 100644
+--- a/train_wind.py
++++ b/train_wind.py
+@@ -1,6 +1,7 @@
+ import argparse
+ import os
+ import torch
++import wandb
+ import numpy as np
+ from torch.utils.tensorboard import SummaryWriter
+ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+@@ -8,7 +9,6 @@ from experiments.exp_wind import Exp_wind
+ 
+ parser = argparse.ArgumentParser(description='ResNet on Wind Speed dataset')
+ 
+-
+ parser.add_argument('--model', type=str, required=False, default='ResNet1D', help='model of the experiment')
+ ### -------  dataset settings --------------
+ parser.add_argument('--data', type=str, required=False, default='Wind_speed_data', help='name of dataset')
+@@ -31,7 +31,7 @@ parser.add_argument('--devices', type=str, default='0',help='device ids of multi
+ ### -------  input/output length settings --------------                                                                            
+ parser.add_argument('--seq_len', type=int, default=32, help='input sequence length of resnet')
+ parser.add_argument('--label_len', type=int, default=32, help='start token length of Informer decoder')
+-parser.add_argument('--pred_len', type=int, default=128, help='prediction sequence length, horizon')
++parser.add_argument('--pred_len', type=int, default=64, help='prediction sequence length, horizon')
+ parser.add_argument('--concat_len', type=int, default=0)
+ parser.add_argument('--single_step', type=int, default=0)
+ parser.add_argument('--single_step_output_One', type=int, default=0)
+@@ -42,7 +42,7 @@ parser.add_argument('--cols', type=str, nargs='+', help='file list')
+ parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
+ parser.add_argument('--itr', type=int, default=0, help='experiments times')
+ parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')
+-parser.add_argument('--batch_size', type=int, default=32, help='batch size of train input data')
++parser.add_argument('--batch_size', type=int, default=64, help='batch size of train input data')
+ parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
+ parser.add_argument('--lr', type=float, default=0.0001, help='optimizer learning rate')
+ parser.add_argument('--loss', type=str, default='RMSE',help='loss function')
+@@ -61,12 +61,13 @@ parser.add_argument('--base_filter', type=int, default=4, help='number of filter
+ parser.add_argument('--groups', default=1, type=int, help='set largest to 1')
+ parser.add_argument('--n_block', default=4, type=int, help='number of blocks')
+ parser.add_argument('--kernel', default=3, type=int, help='width of kernel')
+-parser.add_argument('--n_classes', default=128, type=int, help='number of classes')
++parser.add_argument('--n_classes', default=64, type=int, help='number of classes')
+ 
+ 
+ 
+ args = parser.parse_args()
+ 
++
+ args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
+ 
+ if args.use_gpu and args.use_multi_gpu:
+@@ -90,6 +91,38 @@ args.freq = args.freq[-1:]
+ print('Args in experiment:')
+ print(args)
+ 
++wandb.init(config=args)
++config = wandb.config
++
++'''config = {
++    'method': 'grid', #grid, random
++    'parameters':{
++    
++      'train_epochs': {
++          'values': [10]
++      },
++      'batch_size': {
++          'values': [128]
++      },
++      'lr': {
++          'values': [1e-4]
++      },
++      'features': {
++          'values': ['S']
++      },
++      'input_channel': {
++          'values': [32]
++      },
++      'n_classes': {
++          'values': [64]
++      }
++    }
++}
++
++sweep_id = wandb.sweep(
++    config,
++    project="Wind Speed Forecasting")
++'''
+ torch.manual_seed(4321)  # reproducible
+ torch.cuda.manual_seed_all(4321)
+ torch.backends.cudnn.benchmark = False
+@@ -117,7 +150,7 @@ else:
+ 
+             exp = Exp(args)  # set experiments
+             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+-            exp.train(setting)
++            exp.train(setting) 
+ 
+             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+             mae, maes, mse, mses = exp.test(setting)
+@@ -132,13 +165,24 @@ else:
+         print('Final min normed mse:{:.4f}, mae:{:.4f}'.format(min(mse_), min(mae_)))
+         print('Final min denormed mse:{:.4f}, mae:{:.4f}'.format(min(mses_), min(maes_)))
+     else:
+-        setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_lr{}_bs{}itr0'.format(args.model,args.data, args.features, args.seq_len, args.label_len, args.pred_len,args.lr,args.batch_size)
++        setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_lr{}_bs{}_itr0'.format(args.model,args.data, args.features, args.seq_len, args.label_len, args.pred_len,args.lr,args.batch_size)
++        wandb.log({
++            "model": args.model,
++            "data": args.data,
++            "features" : args.features,
++            "Sequence Length": args.seq_len,
++            "label length": args.label_len,
++            "prediction length": args.pred_len,
++            "learning rate": args.lr,
++            "batch size": args.batch_size
++            }) 
+         exp = Exp(args)  # set experiments
+         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+         exp.train(setting)
++        #wandb.agent(sweep_id, exp.train(setting))
+ 
+         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+-        mae, maes, mse, mses = exp.test(setting)
++        mae, maes, mse, mses =exp.test(setting)
+         print('Final mean normed mse:{:.4f},mae:{:.4f},denormed mse:{:.4f},mae:{:.4f}'.format(mse, mae, mses, maes))
+ 
+ 

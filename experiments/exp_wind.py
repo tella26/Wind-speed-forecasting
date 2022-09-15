@@ -1,9 +1,10 @@
+import json
 import os
 import sys
 import time
 
 import numpy as np
-
+import wandb
 import torch
 import torch.nn as nn
 from torch import optim
@@ -75,7 +76,11 @@ class Exp_wind(Exp_Basic):
             freq=freq,
             cols=args.cols
         )
+        dataset_json_str = json.dumps(list(data_set))
+        wandb.log({
+            flag + "_Dataset": dataset_json_str})
         print(flag, len(data_set))
+        
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
@@ -87,6 +92,8 @@ class Exp_wind(Exp_Basic):
 
     def _select_optimizer(self):
         model_optim = optim.Adam(self.model.parameters(), lr=self.args.lr)
+        wandb.log({
+            "Optimizer": model_optim })
         return model_optim
     
     def _select_criterion(self, losstype):
@@ -124,8 +131,13 @@ class Exp_wind(Exp_Basic):
             true_scale = torch.tensor(true_scale)           
             true_scales.append(true_scale.detach().cpu().numpy())
             total_loss.append(loss)
+            wandb.log({"Predicted Scales val": pred_scales})
+            wandb.log({"True Scales val": true_scales})
+            wandb.log({"Predicted val": pred})
+            wandb.log({"True val": true})
             
         total_loss = np.average(total_loss)
+        wandb.log({"Total validation loss": total_loss})
 
         preds = np.array(preds)
         trues = np.array(trues)
@@ -139,6 +151,23 @@ class Exp_wind(Exp_Basic):
 
         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
+        # For true and Predicted
+        wandb.log({"mae val": mae})
+        wandb.log({"mse val": mse})
+        wandb.log({"rmse val": rmse})
+        wandb.log({"mape val": mape})
+        wandb.log({"mspe val": mspe})
+        wandb.log({"corr val": corr})
+        
+         # For true and Predicted scales
+        wandb.log({"mae_scale val": maes})
+        wandb.log({"mse_scale val": mses})
+        wandb.log({"rmse_scale val": rmses})
+        wandb.log({"mape_scale val": mapes})
+        wandb.log({"mspe_scale val": mspes})
+        wandb.log({"corr_scale val": corrs})
+       
+        
         '''
         writer.add_scalar('mae', mae, global_step=self.epoch)
         writer.add_scalar('mse', mse, global_step=self.epoch)
@@ -191,8 +220,6 @@ class Exp_wind(Exp_Basic):
                     train_data, batch_x, batch_y)
                 true = true.mean(-1)
                 loss = criterion(pred, true)
- 
-
                 train_loss.append(loss.item())
                 
                 if (i+1) % 100==0:
@@ -202,6 +229,9 @@ class Exp_wind(Exp_Basic):
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
+                    wandb.log({"Speed": speed})
+                    wandb.log({"left_time ": left_time })
+                    wandb.log({"loss": loss})
                 
                 if self.args.use_amp:
                     print('use amp')    
@@ -225,8 +255,10 @@ class Exp_wind(Exp_Basic):
             writer.add_scalar('train_loss', train_loss, global_step=epoch)
             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
             writer.add_scalar('test_loss', test_loss, global_step=epoch)
-  
-
+            wandb.log({"Train Loss": train_loss})
+            wandb.log({"Validation Loss": valid_loss})
+            wandb.log({"Test Loss": test_loss})
+            wandb.log({"Cost time": time.time()-epoch_time})
             
             early_stopping(valid_loss, self.model, path)
             if early_stopping.early_stop:
@@ -234,6 +266,7 @@ class Exp_wind(Exp_Basic):
                 break
 
             lr = adjust_learning_rate(model_optim, epoch+1, self.args)
+            wandb.log({"Learning rate adjustent": lr})
             
         save_model(epoch, lr, self.model, path, model_name=self.args.data, horizon=self.args.pred_len)
         best_model_path = path+'/'+'checkpoint.pth'
@@ -266,7 +299,10 @@ class Exp_wind(Exp_Basic):
             trues.append(true.detach().cpu().numpy())
             pred_scales.append(pred_scale.detach().cpu().numpy())
             true_scales.append(true_scale.detach().cpu().numpy())
-
+            wandb.log({"Predicted Scales test": pred_scales})
+            wandb.log({"True Scales test": true_scales})
+            wandb.log({"Predicted test": pred})
+            wandb.log({"True test": true})
         preds = np.array(preds)
         trues = np.array(trues)
 
@@ -280,6 +316,22 @@ class Exp_wind(Exp_Basic):
 
         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
+        
+        # For true and Predicted
+        wandb.log({"mae test": mae})
+        wandb.log({"mse test": mse})
+        wandb.log({"rmse test": rmse})
+        wandb.log({"mape test": mape})
+        wandb.log({"mspe test": mspe})
+        wandb.log({"corr test": corr})
+        
+         # For true and Predicted scales
+        wandb.log({"mae_scale test": maes})
+        wandb.log({"mse_scale test": mses})
+        wandb.log({"rmse_scale test": rmses})
+        wandb.log({"mape_scale test": mapes})
+        wandb.log({"mspe_scale test": mspes})
+        wandb.log({"corr_scale test": corrs})
         print('normed mse:{:.4f}, mae:{:.4f}, rmse:{:.4f}, mape:{:.4f}, mspe:{:.4f}, corr:{:.4f}'.format(mse, mae, rmse, mape, mspe, corr))
         print('TTTT Final --> denormed mse:{:.4f}, mae:{:.4f}, rmse:{:.4f}, mape:{:.4f}, mspe:{:.4f}, corr:{:.4f}'.format(mses, maes, rmses, mapes, mspes, corrs))
 

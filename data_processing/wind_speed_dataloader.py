@@ -1,6 +1,8 @@
 import os
 import numpy as np
+import wandb
 import pandas as pd
+
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -12,11 +14,13 @@ from data_processing.timefeatures import time_features
 import warnings
 warnings.filterwarnings('ignore')
 
+
+
 class Dataset_wind(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='40m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
-        # size [seq_len, label_len, pred_len]
+                 target='50m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+        #size [seq_len, label_len, pred_len]
         # info
         if size == None:
             self.seq_len = 24*4*4
@@ -48,8 +52,16 @@ class Dataset_wind(Dataset):
                                           self.data_path))
         '''
         df_raw.columns: ['time', ...(other features), target feature]
-        '''
-        # cols = list(df_raw.columns); 
+       
+        cols = list(df_raw.columns); 
+        wandb.init(
+        project="Wind Speed Forecasting")
+        # Create a wandb Table to log data, labels and predictions to
+        table = wandb.Table(data=df_raw, columns=cols)
+        wandb.log({"data_table":table}, commit=False)
+         # Mark the run as finished
+        wandb.finish()
+         '''
         if self.cols:
             cols=self.cols.copy()
             cols.remove(self.target)
@@ -60,10 +72,13 @@ class Dataset_wind(Dataset):
         num_train = int(len(df_raw)*0.7)
         num_test = int(len(df_raw)*0.2)
         num_vali = len(df_raw) - num_train - num_test
+        
+        
         border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
         border2s = [num_train, num_train+num_vali, len(df_raw)]
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
+        
         
         if self.features=='M' or self.features=='MS':
             cols_data = df_raw.columns[1:]
@@ -88,6 +103,7 @@ class Dataset_wind(Dataset):
         else:
             self.data_y = data[border1:border2]
         self.data_stamp = data_stamp
+        
     
     def __getitem__(self, index):
         s_begin = index
@@ -99,7 +115,28 @@ class Dataset_wind(Dataset):
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
-
+        
+        '''
+        my_data = [
+             [seq_x],
+             #seq_y,
+             #seq_x_mark,
+             #seq_y_mark          
+            ]
+        # cols = list(my_data.columns);
+        column=seq_x['train_batch_x'] 
+        wandb.init(
+        project="Wind Speed Forecasting",
+        # Track hyperparameters and run metadata
+        config={
+        "train_epochs": 120
+        } )
+        # Create a wandb Table to log data, labels and predictions to
+        table = wandb.Table(data=my_data, columns=column)
+        wandb.log({"data_table":table}, commit=False)
+         # Mark the run as finished
+        wandb.finish()
+        '''
         return seq_x, seq_y, seq_x_mark, seq_y_mark
     
     def __len__(self):
@@ -111,8 +148,8 @@ class Dataset_wind(Dataset):
 class Dataset_Pred(Dataset):
     def __init__(self, root_path, flag='pred', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='40m', scale=True, inverse=False, timeenc=0, freq='15min', cols=None):
-        # size [seq_len, label_len, pred_len]
+                 target='50m', scale=True, inverse=False, timeenc=0, freq='15min', cols=None):
+        #size [seq_len, label_len, pred_len]
         # info
         if size == None:
             self.seq_len = 24*4*4
@@ -204,4 +241,4 @@ class Dataset_Pred(Dataset):
     # Download the data set from URL
     print("Downloading data from wind speed")
     Dataset_wind("./dataset/")
-'''
+    '''
