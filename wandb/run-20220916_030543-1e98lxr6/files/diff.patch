@@ -1,0 +1,64 @@
+diff --git a/experiments/exp_wind.py b/experiments/exp_wind.py
+index f6869a5..d15f9c5 100644
+--- a/experiments/exp_wind.py
++++ b/experiments/exp_wind.py
+@@ -131,12 +131,12 @@ class Exp_wind(Exp_Basic):
+             true_scale = torch.tensor(true_scale)           
+             true_scales.append(true_scale.detach().cpu().numpy())
+             total_loss.append(loss)
+-            wandb.log({"Predicted Scales val": pred_scales})
+-            wandb.log({"True Scales val": true_scales})
+-            wandb.log({"Predicted val": pred})
+-            wandb.log({"True val": true})
+             
+         total_loss = np.average(total_loss)
++        wandb.log({"Predicted Scales val": pred_scales})
++        wandb.log({"True Scales val": true_scales})
++        wandb.log({"Predicted val": pred})
++        wandb.log({"True val": true})
+         wandb.log({"Total validation loss": total_loss})
+ 
+         preds = np.array(preds)
+@@ -229,9 +229,6 @@ class Exp_wind(Exp_Basic):
+                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                     iter_count = 0
+                     time_now = time.time()
+-                    wandb.log({"Speed": speed})
+-                    wandb.log({"left_time ": left_time })
+-                    wandb.log({"loss": loss})
+                 
+                 if self.args.use_amp:
+                     print('use amp')    
+@@ -255,6 +252,9 @@ class Exp_wind(Exp_Basic):
+             writer.add_scalar('train_loss', train_loss, global_step=epoch)
+             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
+             writer.add_scalar('test_loss', test_loss, global_step=epoch)
++            wandb.log({"Speed": speed})
++            wandb.log({"left_time ": left_time })
++            wandb.log({"loss": loss})
+             wandb.log({"Train Loss": train_loss})
+             wandb.log({"Validation Loss": valid_loss})
+             wandb.log({"Test Loss": test_loss})
+@@ -299,10 +299,6 @@ class Exp_wind(Exp_Basic):
+             trues.append(true.detach().cpu().numpy())
+             pred_scales.append(pred_scale.detach().cpu().numpy())
+             true_scales.append(true_scale.detach().cpu().numpy())
+-            wandb.log({"Predicted Scales test": pred_scales})
+-            wandb.log({"True Scales test": true_scales})
+-            wandb.log({"Predicted test": pred})
+-            wandb.log({"True test": true})
+         preds = np.array(preds)
+         trues = np.array(trues)
+ 
+@@ -313,7 +309,10 @@ class Exp_wind(Exp_Basic):
+         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
+         true_scales = true_scales.reshape(-1, true_scales.shape[-2], true_scales.shape[-1])
+         pred_scales = pred_scales.reshape(-1, pred_scales.shape[-2], pred_scales.shape[-1])
+-
++        wandb.log({"Predicted Scales test": pred_scales})
++        wandb.log({"True Scales test": true_scales})
++        wandb.log({"Predicted test": pred})
++        wandb.log({"True test": true})
+         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
+         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
+         
