@@ -15,7 +15,7 @@ parser.add_argument('--data', type=str, required=False, default='Wind_speed_data
 parser.add_argument('--root_path', type=str, default='./dataset/', help='root path of the data file')
 parser.add_argument('--data_path', type=str, default='Wind_speed_data', help='location of the data file')
 parser.add_argument('--features', type=str, default='S', choices=['S', 'M'], help='features S is univariate, M is multivariate')
-parser.add_argument('--target', type=str, default='80m', help='target feature')
+parser.add_argument('--target', type=str, default='60m', help='target feature')
 parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 parser.add_argument('--checkpoints', type=str, default='exp/wind_checkpoints/', help='location of model checkpoints')
 parser.add_argument('--inverse', type=bool, default =False, help='denorm the output data')
@@ -31,7 +31,7 @@ parser.add_argument('--devices', type=str, default='0',help='device ids of multi
 ### -------  input/output length settings --------------                                                                            
 parser.add_argument('--seq_len', type=int, default=32, help='input sequence length of resnet')
 parser.add_argument('--label_len', type=int, default=32, help='start token length of Informer decoder')
-parser.add_argument('--pred_len', type=int, default=128, help='prediction sequence length, horizon')
+parser.add_argument('--pred_len', type=int, default=64, help='prediction sequence length, horizon')
 parser.add_argument('--concat_len', type=int, default=0)
 parser.add_argument('--single_step', type=int, default=0)
 parser.add_argument('--single_step_output_One', type=int, default=0)
@@ -42,7 +42,7 @@ parser.add_argument('--cols', type=str, nargs='+', help='file list')
 parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
 parser.add_argument('--itr', type=int, default=0, help='experiments times')
 parser.add_argument('--train_epochs', type=int, default=100, help='train epochs')
-parser.add_argument('--batch_size', type=int, default=18, help='batch size of train input data')
+parser.add_argument('--batch_size', type=int, default=64, help='batch size of train input data')
 parser.add_argument('--patience', type=int, default=10, help='early stopping patience')
 parser.add_argument('--lr', type=float, default=0.0001, help='optimizer learning rate')
 parser.add_argument('--loss', type=str, default='RMSE',help='loss function')
@@ -61,7 +61,7 @@ parser.add_argument('--base_filter', type=int, default=4, help='number of filter
 parser.add_argument('--groups', default=1, type=int, help='set largest to 1')
 parser.add_argument('--n_block', default=4, type=int, help='number of blocks')
 parser.add_argument('--kernel', default=3, type=int, help='width of kernel')
-parser.add_argument('--n_classes', default=128, type=int, help='number of classes')
+parser.add_argument('--n_classes', default=64, type=int, help='number of classes')
 
 
 

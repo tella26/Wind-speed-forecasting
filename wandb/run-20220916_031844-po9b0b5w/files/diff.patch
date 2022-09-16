@@ -1,0 +1,39 @@
+diff --git a/experiments/exp_wind.py b/experiments/exp_wind.py
+index d15f9c5..c211f42 100644
+--- a/experiments/exp_wind.py
++++ b/experiments/exp_wind.py
+@@ -76,11 +76,10 @@ class Exp_wind(Exp_Basic):
+             freq=freq,
+             cols=args.cols
+         )
+-        dataset_json_str = json.dumps(list(data_set))
++        length_data = len(data_set)
++        print(flag,length_data )
+         wandb.log({
+-            flag + "_Dataset": dataset_json_str})
+-        print(flag, len(data_set))
+-        
++            flag + "_Dataset": length_data})
+         data_loader = DataLoader(
+             data_set,
+             batch_size=batch_size,
+@@ -252,9 +251,6 @@ class Exp_wind(Exp_Basic):
+             writer.add_scalar('train_loss', train_loss, global_step=epoch)
+             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
+             writer.add_scalar('test_loss', test_loss, global_step=epoch)
+-            wandb.log({"Speed": speed})
+-            wandb.log({"left_time ": left_time })
+-            wandb.log({"loss": loss})
+             wandb.log({"Train Loss": train_loss})
+             wandb.log({"Validation Loss": valid_loss})
+             wandb.log({"Test Loss": test_loss})
+@@ -266,8 +262,7 @@ class Exp_wind(Exp_Basic):
+                 break
+ 
+             lr = adjust_learning_rate(model_optim, epoch+1, self.args)
+-            wandb.log({"Learning rate adjustent": lr})
+-            
++            wandb.log({"Learning rate adjustent": lr}) 
+         save_model(epoch, lr, self.model, path, model_name=self.args.data, horizon=self.args.pred_len)
+         best_model_path = path+'/'+'checkpoint.pth'
+         self.model.load_state_dict(torch.load(best_model_path))

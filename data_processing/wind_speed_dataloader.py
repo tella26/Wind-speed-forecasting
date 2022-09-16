@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class Dataset_wind(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='50m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+                 target='80m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
         #size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -148,7 +148,7 @@ class Dataset_wind(Dataset):
 class Dataset_Pred(Dataset):
     def __init__(self, root_path, flag='pred', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='50m', scale=True, inverse=False, timeenc=0, freq='15min', cols=None):
+                 target='80m', scale=True, inverse=False, timeenc=0, freq='7min', cols=None):
         #size [seq_len, label_len, pred_len]
         # info
         if size == None:
