@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class Dataset_wind(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='80m', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+                 target='50m', scale=True, inverse=False, timeenc=0, freq='s', cols=None):
         #size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -115,7 +115,6 @@ class Dataset_wind(Dataset):
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
-        
         '''
         my_data = [
              [seq_x],
@@ -148,7 +147,7 @@ class Dataset_wind(Dataset):
 class Dataset_Pred(Dataset):
     def __init__(self, root_path, flag='pred', size=None, 
                  features='S', data_path='Wind_speed_data.csv', 
-                 target='80m', scale=True, inverse=False, timeenc=0, freq='7min', cols=None):
+                 target='50m', scale=True, inverse=False, timeenc=0, freq='s', cols=None):
         #size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -227,7 +226,6 @@ class Dataset_Pred(Dataset):
         seq_y = self.data_y[r_begin:r_begin+self.label_len]
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
-
         return seq_x, seq_y, seq_x_mark, seq_y_mark
     
     def __len__(self):

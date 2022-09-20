@@ -1,1 +1,0 @@
-{"model": "ResNet1D", "data": "Wind_speed_data", "features": "S", "Sequence Length": 32, "label length": 32, "prediction length": 64, "learning rate": 0.0001, "batch size": 64, "_timestamp": 1663286747.5779588, "_runtime": 4.394010782241821, "_step": 0, "_wandb": {"runtime": 79}}

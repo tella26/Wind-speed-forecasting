@@ -47,7 +47,7 @@ class Exp_wind(Exp_Basic):
                 verbose=False     
                 )
         writer = SummaryWriter('event/run_wind_speed_models/{}'.format(self.args.model_name))
-        example_data = torch.randn(32, 32, 72).to(self.device)
+        example_data = torch.randn(32, self.args.input_channel, 72).to(self.device)
         writer.add_graph(model, example_data)
         print(model)
         return model.double()
@@ -78,15 +78,21 @@ class Exp_wind(Exp_Basic):
         )
         length_data = len(data_set)
         print(flag,length_data )
+        #json_data = json.dumps(data_set.data_x)
         wandb.log({
-            flag + "_Dataset": length_data})
+           flag + "_Dataset": data_set.data_x})
+        '''wandb.log({flag + "_Dataset": wandb.plot.line_series(
+                         xs = data_set.data_x, 
+                         ys = np.array(range(1,length_data)),
+                         keys = [flag, "time"])})'''
+        
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
             shuffle=shuffle_flag,
             num_workers=args.num_workers,
             drop_last=drop_last)
-
+        
         return data_set, data_loader
 
     def _select_optimizer(self):
@@ -134,7 +140,11 @@ class Exp_wind(Exp_Basic):
         wandb.log({"True Scales val": true_scales})
         wandb.log({"Predicted val": pred})
         wandb.log({"True val": true})
-        wandb.log({"Total validation loss": total_loss})
+        '''wandb.log({"Predicted vs True on Validation data" : wandb.plot.line_series(
+                         xs = pred.data, 
+                         ys = true.data, 
+                         keys = ["Predicted val", "True val"])})
+        wandb.log({"Total validation loss": total_loss})'''
 
         preds = np.array(preds)
         trues = np.array(trues)
@@ -305,7 +315,16 @@ class Exp_wind(Exp_Basic):
         wandb.log({"Predicted Scales test": pred_scales})
         wandb.log({"True Scales test": true_scales})
         wandb.log({"Predicted test": pred})
-        wandb.log({"True test": true})
+        wandb.log({"True test": true}) 
+        '''
+        wandb.log({"Predicted Scale vs True Scale on Test data" : wandb.plot.line_series(
+                         xs = pred_scales, 
+                         ys = true_scales, 
+                         keys = ["Predicted Scales test", "True Scales test"])})     
+        wandb.log({"Predicted vs True on Test data" : wandb.plot.line_series(
+                         xs = pred, 
+                         ys = true, 
+                         keys = ["Predicted test", "True test"])})'''
         mae, mse, rmse, mape, mspe, corr = metric(preds, trues)
         maes, mses, rmses, mapes, mspes, corrs = metric(pred_scales, true_scales)
         
